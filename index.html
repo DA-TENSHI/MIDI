@@ -1,0 +1,1719 @@
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>SoundFont MIDI Player</title>
+<meta name="description" content="This app is a MIDI File Player with custom SoundFont file. You can also import your own SoundFont (sf2) files and test them with MIDI files. Just open MIDI, SoundFont files from your Google Drive and your computer, and Play it in your browser.">
+<meta name="keywords" content="midi player, midi player with soundfont, check soundfont, online midi player, mid, midi, sf2">
+
+<meta property="og:title" content="SoundFont MIDI Player"> 
+<meta property="og:description" content="This app is a MIDI File Player with custom SoundFont file. You can also import your own SoundFont (sf2) files and test them with MIDI files. Just open MIDI, SoundFont files from your Google Drive and your computer, and Play it in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="//thetimetube.herokuapp.com/">
+<meta property="og:image" content="//thetimetube.herokuapp.com/img/logo128.png">
+
+<link rel="shortcut icon" href="favicon.ico">
+
+<style>
+*{
+	font-size:14px;
+	font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+body{
+	background:#E9EAED;
+}
+
+A:link    {color:#0860A8;text-decoration:none;}
+A:visited {color:#0860A8;text-decoration:none;}
+A:active  {color:#0860A8;text-decoration:underline;}
+A:hover  {color;#0860A8;text-decoration:underline;}
+
+.divopt{
+	-webkit-box-shadow: 0 0 10px #999;
+	-moz-box-shadow: 0 0 10px #999;
+	box-shadow: 0 0 10px #999;
+}
+.uploaded{color:green;}
+.error{color:#8A0808;}
+.welcome{color:#45616D;}
+
+#downlink3 {font-size:22px;color:green}
+#downlink3 a{font-size:22px}
+.hover { border: 5px dashed #333;}
+.header{color:green;}
+.table2 table{
+	border-collapse: collapse;margin-bottom:5px;margin-top:2px;
+}
+.table2 td{
+	padding:2px;font-size:14px;
+}
+</style>
+
+<script src="https://apis.google.com/_/scs/abc-static/_/js/k=gapi.lb.ja.DSAVNtimhTo.O/m=picker/exm=client/rt=j/sv=1/d=1/ed=1/rs=AHpOoo856LrcOmOJ7iaasgfcCm-tEHo1nA/cb=gapi.loaded_1?le=scs" async=""></script><script src="https://apis.google.com/_/scs/abc-static/_/js/k=gapi.lb.ja.DSAVNtimhTo.O/m=client/rt=j/sv=1/d=1/ed=1/rs=AHpOoo856LrcOmOJ7iaasgfcCm-tEHo1nA/cb=gapi.loaded_0?le=scs" async=""></script><script src="https://partner.googleadservices.com/gampad/cookie.js?domain=thetimetube.herokuapp.com&amp;callback=_gfp_s_&amp;client=ca-pub-1113541014872557&amp;gpid_exp=1"></script><script src="https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202210100101/show_ads_impl_fy2021.js?bust=31070290" id="google_shimpl"></script><script src="js/common.js" type="text/javascript"></script>
+<script>
+var gadb=false;
+function setstorage(name,value){
+	if(name!='c_prefer_ext') name="soundf_"+name;
+	if (window.localStorage){
+		localStorage[name]=value+'';
+	}
+}
+function getstorage(name){
+	if(name!='c_prefer_ext') name="soundf_"+name;
+	var s;
+	if (window.localStorage){
+		s=localStorage[name];
+	}
+	return s;
+}
+function proc_saveopt(){
+	var b=[];
+	var c;
+	var obj=_getid("optcontainer");
+	var a=obj.getElementsByTagName('INPUT');
+	for(var i = 0; i < a.length; i++){    
+		if(a[i].type=='checkbox'){
+			c={};
+			c.name=a[i].name;
+			c.type=a[i].type;
+			c.checked=a[i].checked;
+			b.push(c);
+		}else if(a[i].type=='text'){
+			c={};
+			c.name=a[i].name;
+			c.type=a[i].type;
+			c.value=a[i].value;
+			b.push(c);
+		}
+	}
+	function find(name1,name2){
+		var a=obj.getElementsByTagName(name1);
+		var s;
+		for(var i = 0; i < a.length; i++){    
+			if(a[i].form && a[i].form.name){
+				s=a[i].value || '';
+				if(s.length>256*1024)continue;
+				c={};
+				c.name=a[i].name;
+				c.type=name2;
+				c.value=s;
+				b.push(c);
+			}
+		}
+	}
+	find('SELECT','select');
+	find('TEXTAREA','textarea');
+
+	if(window.JSON) setstorage('c_opt',JSON.stringify(b));
+}
+function proc_loadopt(){
+	var s=getstorage('c_opt');
+	var b=[];
+	try{
+		b=JSON.parse(s);
+	}catch(err){
+		b=[];
+	}
+	if(!b) b=[];
+
+	var c;
+	for(var i = 0; i < b.length; i++){    
+		if(b[i].type=='checkbox'){
+			c=document.optcontainer[b[i].name];
+			if(c) c.checked=b[i].checked;
+		}else if(b[i].type=='select' || b[i].type=='text' || b[i].type=='textarea'){
+			c=document.optcontainer[b[i].name];
+			if(c) c.value=b[i].value;
+		}
+	}
+	var a=_getid("optcontainer").getElementsByTagName('*');
+	for(var i = 0; i < a.length; i++){    
+		if(a[i].tagName=='SELECT'){
+			a[i].onchange=proc_saveopt;
+		}else if(a[i].type=='checkbox'){
+			a[i].onclick=proc_saveopt;
+		}
+	}
+}
+
+function init(){
+	window.onunload=function(){
+		proc_saveopt();
+	}	
+}
+function print(text) {
+	//console.log('print:'+text);
+	if(text){
+		text=text.replace(/fluidsynth\:/i,'');
+		proc_log('log1',text);
+	}
+}
+function printErr(text) {
+	//console.log('printErr:'+text);
+	if(text){
+		text=text.replace(/fluidsynth\:/i,'');
+		proc_log('log1',text,'uploaded');
+	}
+}
+var Module = {
+	print: print, printErr: printErr
+}
+</script>
+
+<script async="" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({
+          google_ad_client: "ca-pub-1113541014872557",
+          enable_page_level_ads: true
+     });
+</script>
+<meta http-equiv="origin-trial" content="A+cA2PUOfIOKAdSDJOW5CP9ZlxONy1yu+hqAq72zUtKw4rLdihqRp6Nui/jUyCyegr+BUtH+C+Elv0ufn05yBQEAAACFeyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A+zsdH3aNZT/bkjT8U/o5ACzyaeNYzTvtoVmwf/KOilfv39pxY2AIsOwhQJv+YnXp98i3TqrQibIVtMWs5UHjgoAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="AxceVEhIegcDEHqLXFQ2+vPKqzCppoJYsRCZ/BdfVnbM/sUUF2BXV8lwNosyYjvoxnTh2FC8cOlAnA5uULr/zAUAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><link rel="preload" href="https://adservice.google.co.jp/adsid/integrator.js?domain=thetimetube.herokuapp.com" as="script"><script type="text/javascript" src="https://adservice.google.co.jp/adsid/integrator.js?domain=thetimetube.herokuapp.com"></script><link rel="preload" href="https://adservice.google.com/adsid/integrator.js?domain=thetimetube.herokuapp.com" as="script"><script type="text/javascript" src="https://adservice.google.com/adsid/integrator.js?domain=thetimetube.herokuapp.com"></script><style type="text/css">  @-webkit-keyframes rotate {
+    from  { -webkit-transform: rotate(0deg); }
+    to   { -webkit-transform: rotate(360deg); }
+  }
+
+  @keyframes rotate {
+    from  { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+    .dropbox-dropin-btn, .dropbox-dropin-btn:link, .dropbox-dropin-btn:hover {
+      display: inline-block;
+      height: 14px;
+      font-family: "Lucida Grande", "Segoe UI", "Tahoma", "Helvetica Neue", "Helvetica", sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #636363;
+      text-decoration: none;
+      padding: 1px 7px 5px 3px;
+      border: 1px solid #ebebeb;
+      border-radius: 2px;
+      border-bottom-color: #d4d4d4;
+        background: #fcfcfc;
+  background: -moz-linear-gradient(top, #fcfcfc 0%, #f5f5f5 100%);
+  background: -webkit-linear-gradient(top, #fcfcfc 0%, #f5f5f5 100%);
+  background: linear-gradient(to bottom, #fcfcfc 0%, #f5f5f5 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fcfcfc', endColorstr='#f5f5f5',GradientType=0);  
+    }
+
+    .dropbox-dropin-default:hover, .dropbox-dropin-error:hover {
+      border-color: #dedede;
+      border-bottom-color: #cacaca;
+        background: #fdfdfd;
+  background: -moz-linear-gradient(top, #fdfdfd 0%, #f5f5f5 100%);
+  background: -webkit-linear-gradient(top, #fdfdfd 0%, #f5f5f5 100%);
+  background: linear-gradient(to bottom, #fdfdfd 0%, #f5f5f5 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fdfdfd', endColorstr='#f5f5f5',GradientType=0);  
+    }
+
+    .dropbox-dropin-default:active, .dropbox-dropin-error:active {
+      border-color: #d1d1d1;
+      box-shadow: inset 0 1px 1px rgba(0,0,0,0.1);
+    }
+
+    .dropbox-dropin-btn .dropin-btn-status {
+      display: inline-block;
+      width: 15px;
+      height: 14px;
+      vertical-align: bottom;
+      margin: 0 5px 0 2px;
+      background: transparent url('https://www.dropbox.com/static/metaserver/static/images/widgets/dbx-saver-status.png') no-repeat;
+      position: relative;
+      top: 2px;
+    }
+
+    .dropbox-dropin-default .dropin-btn-status {
+      background-position: 0px 0px;
+    }
+
+    .dropbox-dropin-progress .dropin-btn-status {
+      width: 18px;
+      margin: 0 4px 0 0;
+      background: url('https://www.dropbox.com/static/metaserver/static/images/widgets/dbx-progress.png') no-repeat center center;
+        -webkit-animation-name: rotate;
+        -webkit-animation-duration: 1.7s;
+        -webkit-animation-iteration-count: infinite;
+        -webkit-animation-timing-function: linear;
+      animation-name: rotate;
+      animation-duration: 1.7s;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+    }
+
+    .dropbox-dropin-success .dropin-btn-status {
+      background-position: -15px 0px;
+    }
+
+    .dropbox-dropin-disabled {
+      background: #e0e0e0;
+      border: 1px #dadada solid;
+      border-bottom: 1px solid #ccc;
+      box-shadow: none;
+    }
+
+    .dropbox-dropin-disabled .dropin-btn-status {
+      background-position: -30px 0px;
+    }
+
+    .dropbox-dropin-error .dropin-btn-status {
+      background-position: -45px 0px;
+    }
+
+  @media only screen and (-webkit-min-device-pixel-ratio: 1.4) {
+      .dropbox-dropin-btn .dropin-btn-status {
+        background-image: url('https://www.dropbox.com/static/metaserver/static/images/widgets/dbx-saver-status-2x.png');
+        background-size: 60px 14px;
+          -webkit-background-size: 60px 14px;
+      }
+
+      .dropbox-dropin-progress .dropin-btn-status {
+        background: url('https://www.dropbox.com/static/metaserver/static/images/widgets/dbx-progress-2x.png') no-repeat center center;
+        background-size: 20px 20px;
+          -webkit-background-size: 20px 20px;
+      }
+  }
+
+    .dropbox-saver:hover, .dropbox-chooser:hover {
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .dropbox-chooser, .dropbox-dropin-btn {
+      line-height: 11px !important;
+      text-decoration: none !important;
+      box-sizing: content-box !important;
+        -webkit-box-sizing: content-box !important;
+        -moz-box-sizing: content-box !important;
+    }
+    </style><meta http-equiv="origin-trial" content="A+cA2PUOfIOKAdSDJOW5CP9ZlxONy1yu+hqAq72zUtKw4rLdihqRp6Nui/jUyCyegr+BUtH+C+Elv0ufn05yBQEAAACFeyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A+zsdH3aNZT/bkjT8U/o5ACzyaeNYzTvtoVmwf/KOilfv39pxY2AIsOwhQJv+YnXp98i3TqrQibIVtMWs5UHjgoAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="AxceVEhIegcDEHqLXFQ2+vPKqzCppoJYsRCZ/BdfVnbM/sUUF2BXV8lwNosyYjvoxnTh2FC8cOlAnA5uULr/zAUAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><link rel="preload" href="https://adservice.google.co.jp/adsid/integrator.js?domain=thetimetube.herokuapp.com" as="script"><script type="text/javascript" src="https://adservice.google.co.jp/adsid/integrator.js?domain=thetimetube.herokuapp.com"></script><link rel="preload" href="https://adservice.google.com/adsid/integrator.js?domain=thetimetube.herokuapp.com" as="script"><script type="text/javascript" src="https://adservice.google.com/adsid/integrator.js?domain=thetimetube.herokuapp.com"></script><meta http-equiv="origin-trial" content="A+cA2PUOfIOKAdSDJOW5CP9ZlxONy1yu+hqAq72zUtKw4rLdihqRp6Nui/jUyCyegr+BUtH+C+Elv0ufn05yBQEAAACFeyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A+zsdH3aNZT/bkjT8U/o5ACzyaeNYzTvtoVmwf/KOilfv39pxY2AIsOwhQJv+YnXp98i3TqrQibIVtMWs5UHjgoAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="AxceVEhIegcDEHqLXFQ2+vPKqzCppoJYsRCZ/BdfVnbM/sUUF2BXV8lwNosyYjvoxnTh2FC8cOlAnA5uULr/zAUAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjY5NzY2Mzk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><style>.picker-dialog-frame{width:100%;height:100%;border:0;overflow:hidden}.picker-dialog-bg{position:absolute;top:0;left:0;background-color:#fff;z-index:1000}.picker-dialog{position:absolute;top:0;left:0;background-color:#fff;border:1px solid #acacac;width:auto;padding:0;z-index:1001;overflow:auto;box-shadow:0 4px 16px rgba(0,0,0,.2)}.picker-dialog-content{font-size:0;padding:0}.picker-dialog-buttons,.picker-dialog-title{display:none}</style></head>
+<body onload="init()">
+
+<table id="loading" align="center" style="margin-top: 40px; background: white; padding: 3px; border: 0px solid silver; box-shadow: rgb(153, 153, 153) 0px 0px 10px; display: none;"><tbody><tr>
+<td><img src="images/wait.gif">
+</td><td>Loading... Please wait a moment.
+</td></tr></tbody></table>
+<script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="kr19li1hb5w4btr"></script><ins class="adsbygoogle adsbygoogle-noablate" data-adsbygoogle-status="done" style="display: none !important;" data-ad-status="unfilled"><div id="aswift_0_host" tabindex="0" title="Advertisement" aria-label="Advertisement" style="border: none; height: 0px; width: 0px; margin: 0px; padding: 0px; position: relative; visibility: visible; background-color: transparent; display: inline-block;"><iframe id="aswift_0" name="aswift_0" style="left:0;position:absolute;top:0;border:0;width:undefinedpx;height:undefinedpx;" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation" frameborder="0" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" allow="attribution-reporting" src="https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-1113541014872557&amp;output=html&amp;adk=1812271804&amp;adf=3025194257&amp;lmt=1665844518&amp;plat=9%3A32776%2C16%3A8388608%2C17%3A32%2C24%3A32%2C25%3A32%2C30%3A1081344%2C32%3A32&amp;format=0x0&amp;url=https%3A%2F%2Fthetimetube.herokuapp.com%2Fsoundfont%2F&amp;ea=0&amp;pra=5&amp;wgl=1&amp;easpi=0&amp;asntp=0&amp;asntpv=0&amp;asntpl=0&amp;asntpm=0&amp;asntpc=0&amp;asna=5&amp;asnd=5&amp;asnp=5&amp;asns=5&amp;asmat=1&amp;asptt=-1&amp;uach=WyJDaHJvbWUgT1MiLCIxNDk4OS4xMDcuMCIsIng4NiIsIiIsIjEwNS4wLjUxOTUuMTM0IixbXSxmYWxzZSxudWxsLCI2NCIsW1siR29vZ2xlIENocm9tZSIsIjEwNS4wLjUxOTUuMTM0Il0sWyJOb3QpQTtCcmFuZCIsIjguMC4wLjAiXSxbIkNocm9taXVtIiwiMTA1LjAuNTE5NS4xMzQiXV0sZmFsc2Vd&amp;dt=1665844517538&amp;bpp=7&amp;bdt=351&amp;idt=281&amp;shv=r20221012&amp;mjsv=m202210100101&amp;ptt=9&amp;saldr=aa&amp;abxe=1&amp;nras=1&amp;correlator=4379477484951&amp;frm=20&amp;pv=2&amp;ga_vid=499501815.1665844518&amp;ga_sid=1665844518&amp;ga_hid=1486022383&amp;ga_fc=0&amp;u_tz=540&amp;u_his=18&amp;u_h=853&amp;u_w=1517&amp;u_ah=853&amp;u_aw=1469&amp;u_cd=24&amp;u_sd=0.9&amp;dmc=4&amp;adx=-12245933&amp;ady=-12245933&amp;biw=1470&amp;bih=746&amp;scr_x=0&amp;scr_y=0&amp;eid=44759876%2C44759927%2C44759842%2C44774718%2C42531705%2C31070290%2C31067146%2C31067147%2C31067148&amp;oid=2&amp;pvsid=2522225450236663&amp;tmod=1377258769&amp;uas=0&amp;nvt=1&amp;topics=ARTwLgIEOcOmQ_Ez-uQX0NyAt82IgR-tM8UsA5q05RlWOz44S67ZupWev-K26G38qtGpAkjQ9jegVQGmc36HJVNsFGDqM7ZfLIiAJ9wscy-qQfbBQE4h73584fdcBpdfQDWLm7Jy30cQoJTAE58QDsDEFvAaQsp6ZyUohmHrtYhASAmcfzts45KoWkfpo9jAZguQBsF6xeYQU3XYKW4G&amp;eae=2&amp;fc=1920&amp;brdim=0%2C0%2C0%2C0%2C1469%2C0%2C1469%2C853%2C1470%2C746&amp;vis=1&amp;rsz=%7C%7Cs%7C&amp;abl=NS&amp;fu=32768&amp;bc=31&amp;td=1&amp;ifi=1&amp;uci=a!1&amp;fsb=1&amp;dtd=590" data-google-container-id="a!1" data-load-complete="true"></iframe></div></ins>
+<script type="text/javascript" src="https://app.box.com/js/static/select.js"></script>
+<script src="//speedtesting.herokuapp.com/cdn2/midi/web-audio-api-shim-light.js"></script>
+<script src="js/libfluidsynth-2.0.2.js"></script>
+<script src="js/js-synthesizer.min.js"></script>
+<script>
+document.getElementById('loading').style.display='none';
+</script>
+
+<table align="center">
+<tbody><tr><td height="2">
+</td></tr><tr><td>
+	<center>
+	<a id="toptitle" href="./" title="Go Home" style="color:#0D72BA"><span id="i18n" style="font-size:28px;font-family:Verdana, Arial;font-weight:bold">SoundFont MIDI Player</span></a>
+	</center>
+</td></tr><tr><td height="10">
+</td></tr></tbody></table>
+
+<table id="maintable" align="center" width="820" class="divopt" style="background: white; padding: 5px 7px; border: 0px solid rgb(46, 121, 219); height: auto !important;">
+
+<tbody><tr><td align="center">
+<style>
+.big1{	font-size:17px;}
+.big2{	font-size:25px;}
+</style>
+
+<table width="780">
+<tbody><tr><td><img src="img/logo128.png" width="100"></td><td>&nbsp;
+</td><td align="left">
+This app is a MIDI File Player with custom SoundFont file.<br>
+You can play Standard MIDI File with your browser. Even if you do not own any external MIDI Device.<br>
+You can also import your own SoundFont (sf2) files and test them with MIDI files.<br>
+Just open MIDI, SoundFont files from your Google Drive and your computer, and Play it in your browser.
+It's very easy to use. You can control your playback like Play, Stop, Seek, Volume and all common controls in any audio player.<br>
+Max 100M limit per a file, Supported formats: mid, midi, sf2...
+</td></tr></tbody></table>
+
+<script type="text/javascript">
+    google_ad_client = "ca-pub-1113541014872557";
+    google_ad_slot = "2187200240";
+    google_ad_width = 728;
+    google_ad_height = 90;
+</script>
+<script type="text/javascript" src="//pagead2.googlesyndication.com/pagead/show_ads.js" onerror="gadb=true;">
+</script>
+
+<div style="margin-top:8px;margin-bottom:6px">
+<div id="divopen">
+<table><tbody><tr>
+<td><div id="dfile1" style="display:"><input type="file" id="fileload1" name="files[]" multiple="" style="width:22	0px;margin-left:2px" accept=".mid, .midi, .sf2"></div>
+</td><td>Drop files on this page.
+</td><td>&nbsp;
+</td><td><button onclick="attachment_remove()">Remove</button> <button onclick="attachment_clear()">Clear</button>
+</td></tr></tbody></table>
+<script>document.getElementById("dfile1").innerHTML='<input type="file" id="fileload1" name="files[]" multiple style="width:22	0px;margin-left:2px">';</script>
+</div>
+
+<button type="button" id="btn_open" onclick="gd_open_picker()" title="Select files to download from Google Drive" class="big1"><img src="images/gdrive/product16.png" width="18" align="absmiddle"> Select files from Google Drive</button>
+<button type="button" onclick="open_dropbox()" class="big1"><img src="images/service/dropbox.png" align="absmiddle" width="18"> Select from Dropbox</button>
+<button type="button" onclick="open_box()" class="big1"><img src="images/service/box.png" align="absmiddle" width="18"> Select from Box</button>
+
+<table id="attachments" style="display:none"><tbody><tr><td align="left">
+<select id="attachment" style="width:680px;height:150px" multiple="true" onchange="attachment_onchange()" onclick="attachment_onchange()"></select>
+<div id="desc" style="margin-top:2px;color:green;width:600px;white-space:nowrap;overflow:hidden;border:0px solid red"></div>
+</td></tr></tbody></table>
+
+<div id="msg" style="display:;margin-top:2px;font-size:15px;color:green;width:650px;white-space:nowrap;overflow:hidden;border:0px solid red"></div>
+</div>
+
+<form id="optcontainer" name="optcontainer" style="display:;border:0px dashed #0860A8;padding:0px;margin-bottom:6px;" onsubmit="return false">
+</form>
+
+<button onclick="proc_check('midi')" style="font-size:18px;">Add this file to MIDI</button>
+<button onclick="proc_check('soundfont')" style="font-size:18px;">Add this file to SoundFont</button>
+<button onclick="proc_adddefault()" style="font-size:15px;">Add Default SoundFont</button>
+
+</td></tr><tr><td align="center">
+<table align="center" style="white-space:nowrap"><tbody><tr>
+<td><button id="play" onclick="player_play()" class="big1" disabled="">Play</button> <button id="stop" onclick="player_stop()" class="big1" disabled="">Stop</button>
+</td><td>
+</td><td><select id="loop" onchange="loop_onchange()" style="width:150px">
+<option value="0">No Loop
+</option><option value="1">Loop Current File
+</option></select>
+</td><td>&nbsp;
+</td><td>Volume</td><td><input id="volume" type="range" min="0" max="1" step="0.01" value="0.5" onchange="volume_onchange()" style="width:140px;padding:0px;"></td><td><div id="volume2" style="width:40px"></div>
+</td></tr></tbody></table>
+<table align="center" style="margin-bottom:3px"><tbody><tr>
+<td>Progress</td><td><input id="progress" type="range" min="0" max="100" step="1" value="0" ontouchstart="this.onmousedown=null;this.onmouseup=null;this.onmousemove=null; progress_onmousedown()" ontouchend="progress_onmouseup()" ontouchmove="progress_onmousemove()" onmousedown="progress_onmousedown()" onmouseup="progress_onmouseup()" onmousemove="progress_onmousemove()" style="width:480px;margin:2px;padding:0px">
+</td><td><div id="progress2"></div>
+</td></tr></tbody></table>
+<div id="msg1">MIDI file: <font class="error">Not selected. Please add new one.</font><br>SoundFont file: <font class="error">Not selected. Please add new one.</font></div>
+
+</td></tr><tr><td>
+<div id="downlink" style="margin:5px 0px;width:750px;white-space:nowrap;overflow:hidden;border:0px solid red"></div>
+
+
+<script>
+var cl_files=[];
+function cl_error(s){
+}
+var boxOptions = {
+    clientId: 'c0d4g5gw4956htyb3snng9pl7uqdz0x6',
+    linkType: 'direct',
+    multiselect: true
+};
+var boxSelect;
+function init_box(){
+ if(!boxSelect){
+	boxSelect = new BoxSelect(boxOptions);
+	boxSelect.success(function(files) {
+	  if(!files || files.length==0){
+		  cl_error('Error!!');
+		  return;
+	  }
+	  var a;
+	  //cl_files=[];
+	  for(var i = 0; i <= files.length-1; i++){
+		  if(files[i].is_dir)continue;
+		  a={};
+		  a.service='Box.com';
+		  a.filename=files[i].name;
+		  a.link=files[i].url;
+		  a.size=files[i].size;
+		  cl_files.push(a);
+	  }
+	  cl_display();			
+	});
+	boxSelect.cancel(function() {
+		//cl_error('Canceled by user.');
+	});
+ }
+}
+function open_box(){
+	init_box();
+	boxSelect.launchPopup();
+}
+
+var dropboxOptions = {
+    success: function(files) {
+	  if(!files || files.length==0){
+		  cl_error('Error!!');
+		  return;
+	  }
+	  var a;
+	  //cl_files=[];
+	  for(var i = 0; i <= files.length-1; i++){
+		  if(files[i].is_dir)continue;
+		  a={};
+		  a.service='Dropbox';
+		  a.filename=files[i].name;
+		  a.link=files[i].link || '';
+		  if(a.link.indexOf('?dl=1')<0) a.link+='?dl=1';
+		  a.size=files[i].bytes;
+		  cl_files.push(a);
+	  }
+	  cl_display();
+    },
+    cancel: function() {
+		//cl_error('Canceled by user.');
+    },
+    linkType: "direct", //preview,direct
+    multiselect: true, 
+    //extensions: ['.pdf', '.doc', '.docx'],
+};
+function open_dropbox(){
+	if(gd_checkwork())return;
+	Dropbox.choose(dropboxOptions);
+}
+
+function handleFileSelect(files){
+	if(!files || files.length==0) return;		
+	
+	//cl_files=[];
+	function go(idx){
+		if(idx>files.length-1){
+			cl_display();
+			return;
+		}
+		var f=files[idx];
+		if(!f)return;
+		var a={};
+		a.service='Local File';
+		a.filename=f.name;
+		a.link='';
+		a.size=f.size;
+		a.f=f;
+		cl_files.push(a);		
+		go(idx+1);
+	}
+	go(0);
+}
+
+function cl_display(){
+	var a=_getid("attachment");
+	for(var i=a.options.length-1;i>=0;i--) a.remove(i);
+	_getid("desc").innerHTML='';
+	if(cl_files.length==0){
+		//alert('No selected file');
+		return;
+	}
+	var obj2=_getid("attachment");
+	var d,s;
+	for(var i = 0; i <= cl_files.length-1; i++){
+		d=cl_files[i];
+		var c=document.createElement("option");
+		if(d.link){
+			s=d.filename+getsize(d.size)+' - '+d.service;
+		}else{
+			if(d.f) s='';
+			else s='[No Download Link] ';
+			s+=d.filename+' - '+d.service;
+		}
+		c.value=i;
+		c.appendChild(document.createTextNode(s));		 
+		obj2.appendChild(c);			
+	}
+
+	if(!u_working && cl_files.length>0){
+		obj2.selectedIndex=obj2.options.length-1;	
+		attachment_onchange();
+	}
+	_getid('attachments').style.display='';
+}
+
+var gresp, cgresp, u_working;
+var g_maxsize=100;
+
+function proc_download(url, filesize, callback, title){
+	var resp={};
+	function end(){
+		if(callback) callback(resp);
+	}
+	gd_lastprogress=(new Date()).getTime();	
+		try{
+			var xhr = new XMLHttpRequest();
+			var c=_getid('u_cancel');
+			if(c){
+				c.style.display='';
+				c.onclick=function(){
+					xhr.abort();
+					resp.error="Canceled by user.";
+					resp.canceled=true;
+					end();
+					return false;
+				}
+			}
+			xhr.open('GET', url.split("&access_token=")[0]);
+			xhr.responseType = 'arraybuffer';
+			xhr.onprogress=function(event){
+				if(gd_lastprogress){
+					var elaspetime = new Date();
+					var dt=(elaspetime.getTime()-gd_lastprogress);
+					if(dt<300)return;
+					gd_lastprogress=elaspetime.getTime();
+				}
+				var a=event;
+				if(!a)return;
+				var total=a.totalSize || filesize || a.total  || 0;
+				var current=a.position || a.loaded  || 0;		
+				var c=_getid('gd_progress2');
+				if(c){
+					var s='Downloading... ('+number_format(current)+'/'+number_format(total)+')';
+					if(title) s=title+' '+s;
+					c.innerHTML=s;
+				}
+			};					
+			if(url.split("&access_token=")[1]) xhr.setRequestHeader('Authorization', 'Bearer ' + url.split("&access_token=")[1]);
+		    xhr.onload = function(){
+				if(this.status == 200 || this.status == 206){
+					resp.response=this.response;
+				}else{
+					resp.error="Error (status) " + this.status + "("+this.statusText+") occurred while receiving the file.";
+				}
+				end();
+			};
+			xhr.onerror = function(e){      
+				resp.error="Error " + e.target.status + " occurred while receiving the file.";
+				end();
+			};
+			xhr.send();
+		}catch(err){
+			resp.error=err+' or This browser does not support. Please upgrade your browser.';
+			end();
+		}
+}
+function proc_adddefault(){
+function add(service,filename,link,size){
+	var a={};
+	a.service=service;
+	a.filename=filename;
+	a.link=link;
+	a.size=size;
+	cl_files.push(a);		
+
+	var obj2=_getid("attachment");
+	var d=a;
+	var c=document.createElement("option");
+	s=d.filename+getsize(d.size)+' - '+d.service;
+	c.value=cl_files.length-1;
+	c.appendChild(document.createTextNode(s));		 
+	obj2.appendChild(c);			
+	obj2.selectedIndex=obj2.options.length-1;	
+	attachment_onchange();
+}
+	add('Default MIDI File','Santorini.mid','sample/Santorini.mid',27853);
+	//add('Default SoundFont','A320U.sf2','sample/A320U.sf2',9698968);
+	add('Default SoundFont','TimGM6mb.sf2','sample/TimGM6mb.sf2',5969788);
+	_getid('attachments').style.display='';
+	proc_check('soundfont');	
+}
+function proc_check(addtype){
+	if(gadb){alert('Please disable the adblock for free use.');return;}
+	if(typeof JSSynth == 'undefined' || !JSSynth || !window.AudioContext || !window.URL){
+		alert('Not supported on this browser. Please upgrade your browser.');return;
+	}	
+	if(u_working){
+		alert("It's working. Please try again later.");return;
+	}
+
+	/*var o_pattern=trim(document.optcontainer["o_pattern"].value);
+	if(!o_pattern){
+		alert('Please enter a pattern.');
+		return;
+	}*/
+	var cresp, cidx, idx2;
+	var cl_files2=[];
+	var a=_getid("attachment");
+	for(var i=a.options.length-1;i>=0;i--){
+		if(a.options[i].selected){
+			if(cl_files[a.options[i].value]){
+				cl_files2.push(cl_files[a.options[i].value]);
+				idx2=a.options[i].value;
+			}
+			break;
+		}
+	}
+	if(cl_files.length==0 || cl_files2.length==0){
+		alert('Please select a file.');
+		return;
+	}	
+	//free blob
+	var tot=0;
+	for(var i=cl_files.length-1;i>=0;i--){
+		if(idx2!=i && cl_files[i].blob && cl_files[i].blob.byteLength){			
+			if(tot+cl_files[i].blob.byteLength>90*1024*1024){	
+				cl_files[i].blob=null;
+			}else{
+				tot+=cl_files[i].blob.byteLength;
+			}
+		}
+	}
+
+	_getid("downlink").innerHTML='';
+	_getid("log4").innerHTML='';
+	u_working=true;
+
+	function end(){
+		u_working=false;
+		_getid("downlink").innerHTML="";
+		_progress('log1','Completed.','welcome');
+	}
+	function error(s){
+		proc_log('log1',s+' '+cresp.filename,'error');
+	}
+	function _progress(name,s,state,s2,nolog){
+		if(!cresp)return;
+		if(!state) state='';
+		if(!nolog){
+			proc_log(name,s,state,s2);
+		}else{
+			var a=_getid("gd_progress2");
+			if(a) a.innerHTML='<font class="'+state+'">'+henc(s)+'</font>';
+		}
+	}
+	function next(){
+		cidx++;go();
+	}
+	function capitalizeFirstLetter(string) {
+		return string.charAt(0).toUpperCase() + string.slice(1);
+	}
+	
+	function maingo(){
+		var c=_getid('u_cancel');
+		if(c){
+			c.style.display='';
+			c.onclick=function(){
+				proc_log('log1','Canceled by user.','error');
+				end();
+				return false;
+			}
+		}
+		function step2(){
+			if(addtype=='midi'){
+				midibuffer=cresp.blob;
+				midiname=cresp.filename || 'No Name';
+				player_stop();
+			}else{
+				soundfontbuffer=cresp.blob;
+				soundfontname=cresp.filename || 'No Name';
+				player_soundfontchange();
+			}			
+			player_updateui();
+			end();
+			setTimeout(function(){
+				if(!_getid('play').disabled) player_play();
+			},500);
+		}
+		function step1(){
+			_progress('log1','Processing... '+cresp.filename,'','',true);
+			if(cresp.blob){
+				step2();
+			}else if(cresp.f){
+				var reader = new FileReader();
+				reader.onload = function(e) {
+					cresp.blob=e.target.result;
+					step2();
+				}
+				reader.onerror=function(e) {
+					_progress('log1',"File Reading Error.",'error');
+					next();
+				}
+				reader.readAsArrayBuffer(cresp.f);		
+			}else{
+				_progress('log1',"Buffer Reading Error.",'error');
+			}
+		}
+		step1();
+	}
+
+	_getid("downlink").innerHTML="<table><tr><td><a href='#' id='u_cancel' style='font-size:14px;display:none'>Cancel</a>&nbsp; <td><img src='images/wait.gif' align='absmiddle'><td><div id='gd_progress2'>Processing...</div></table>";
+
+	function go(){
+		if(cidx>cl_files2.length-1){
+			end();
+			return;
+		}
+		cresp=cl_files2[cidx];
+		if(cresp.size>g_maxsize*1024*1024){
+			error('The file size is too large to load. ('+g_maxsize+' MB limit)');
+			next();
+			return;
+		}
+		if(cresp.f){
+			maingo();
+		}else{
+			if(cresp.blob){
+				maingo();
+				return;
+			}
+			var downurl=cresp.link3 || cresp.link;			
+			proc_download(downurl, cresp.size, function(resp){
+				if(resp.error){
+					if(resp.canceled){
+						end();
+						_getid("downlink").innerHTML=henc(resp.error);
+					}else{
+						error(resp.error);
+						next();
+					}
+				}else if(resp.response){
+					//cresp.blob=new Blob([resp.response]);
+					cresp.blob=resp.response;
+					maingo();
+				}else{
+					error('Unknown Error.');
+					next();
+				}
+			},'');
+		}
+	}
+	cidx=0;
+	go();
+}
+
+function attachment_remove(){
+	var a=_getid("attachment");
+	for(var i=a.options.length-1;i>=0;i--){
+		if(a.options[i].selected && cl_files[a.options[i].value]){
+			if(cl_files[a.options[i].value].blob) cl_files[a.options[i].value].blob=null;
+			cl_files.splice(a.options[i].value,1);
+			a.remove(i);
+		}
+	}
+}
+function attachment_clear(){
+	var a=_getid("attachment");
+	for(var i=a.options.length-1;i>=0;i--) a.remove(i);
+	for(var i=cl_files.length-1;i>=0;i--){
+		if(cl_files[i].blob) cl_files[i].blob=null;
+	}
+	cl_files=[];
+}
+function attachment_onchange(){
+	if(u_working) return;
+	var a=_getid("attachment");
+	for(var i=a.options.length-1;i>=0;i--){
+		if(a.options[i].selected){
+			var d=cl_files[a.options[i].value];
+			if(!d)return;
+			gresp=d;
+				var s='';
+				if(d.service=="Google Drive") s+='<a href="#" onclick="proc_gview();return false" title="View this file">View</a>&nbsp; ';// || d.f
+				if(d.link){
+					s+='<a id="slink" href="'+(d.webContentLink || d.link)+'" target="_blank" title="Download manually and Save the file">'+henc(d.filename)+'</a>';
+				}else{
+					s+='<font color=black>'+henc(d.filename)+'</font>';
+				}
+				s+=getsize(d.size)+' - '+d.service;
+				_getid("desc").innerHTML=s;
+				var a=_getid('slink');
+				if(a) a.download=d.filename;
+			break;
+		}
+	}
+}
+
+function getsize(fileSize){
+	if(!fileSize) return '';
+	function humanFileSize(bytes){
+		var thresh = 1024;
+		if(bytes < thresh) return bytes + ' B';
+		var units = ['kB','MB','GB','TB','PB','EB','ZB','YB'];
+		var u = -1;
+		do {
+			bytes /= thresh;
+			++u;
+		} while(bytes >= thresh);
+		return bytes.toFixed(1)+' '+units[u];
+	}
+	return ' ('+humanFileSize(fileSize)+')';
+}					
+
+function init_load(){
+	proc_loadopt();
+	var holder = document;
+	holder.ondragover = function(e){ 
+		_getid('divopen').className = 'hover'; 
+		try{var ua=navigator.userAgent;
+			if(ua && ua.indexOf("Chrome")>=0){					
+				if(e.originalEvent) e = e.originalEvent;
+				if(e.dataTransfer){
+					var b = e.dataTransfer.effectAllowed;
+					e.dataTransfer.dropEffect = ('move' === b || 'linkMove' === b) ? 'move' : 'copy';
+				}
+			}
+		}catch(err){}
+		return false; 
+	};
+	holder.ondragend = function(){ _getid('divopen').className = '';return false; };
+	holder.ondrop = function (e){
+		_getid('divopen').className = '';
+		e.preventDefault();				
+		handleFileSelect(e.dataTransfer.files);
+		return false;
+	};
+	_getid('fileload1').onchange=function(e){
+		if(!e || !e.target){
+			alert("This browser does not support.");
+			return;
+		}
+		handleFileSelect(e.target.files);	
+	}
+	_getid('fileload1').setAttribute("accept",".mid, .midi, .sf2");
+
+	/*if(window.Worker){
+	}else{
+		proc_log('log1','Not supported on this browser. Please upgrade your browser.','error');
+	}*/
+	var s=getstorage('c_volume') || 0.5;
+	_getid('volume').value=s;
+	var s=getstorage('c_loop') || 0;
+	_getid('loop').value=s;
+	player_updateui();
+	player_timer();
+}
+
+//player
+var soundfontbuffer, midibuffer;
+var soundfontname, midiname;
+var synth, context, node;
+window.AudioContext=window.AudioContext || window.webkitAudioContext;
+function player_play(){
+	if(!midibuffer){
+		alert('Please select a MIDI file.');return;
+	}
+	if(!soundfontbuffer){
+		alert('Please select a SoundFont file.');return;
+	}
+	if(!context){
+		context = new window.AudioContext();
+	}
+	if(!synth){
+		function step1(){
+			synth.loadSFont(soundfontbuffer).then(function(){   
+				proc_log('log1','SoundFont loaded.','welcome');
+				synth.addSMFDataToPlayer(midibuffer).then(function(){
+					synth.playPlayer().then(function(){
+						proc_log('log1','Play...','welcome');
+						volume_onchange();
+					},function (err) {
+						proc_log('log1','Failed to play. '+err,'error');
+					});				
+				},function (err) {
+					proc_log('log1','Failed to addSMFDataToPlayer. '+err,'error');
+				});			
+			},function (err) {
+				proc_log('log1','Failed to load SoundFont. '+err,'error');
+			});
+		}
+
+		if(context.audioWorklet && context.audioWorklet.addModule){
+			context.audioWorklet.addModule('js/libfluidsynth-2.0.2.js').then(function(){
+				return context.audioWorklet.addModule('js/js-synthesizer.worklet.min.js');
+			}).then(function(){
+		        synth = new JSSynth.AudioWorkletNodeSynthesizer();
+				synth.init(context.sampleRate);
+				if(!node){
+				    node = synth.createAudioNode(context);
+			        node.connect(context.destination);
+				}
+				step1();
+			});
+		}else{
+			synth = new JSSynth.Synthesizer();
+			synth.init(context.sampleRate);
+			if(!node){
+				node = synth.createAudioNode(context, 8192); 
+				node.connect(context.destination);
+			}
+			step1();
+		}
+
+	}else{
+		if(synth.isPlayerPlaying()){
+			stop();
+		}
+		if(!node){
+			node = synth.createAudioNode(context, 8192); 
+			node.connect(context.destination);
+		}
+		synth.resetPlayer().then(function(){
+			synth.addSMFDataToPlayer(midibuffer).then(function(){
+				synth.playPlayer();
+				_getid("log4").innerHTML='';
+				proc_log('log1','Play...','welcome');
+				volume_onchange();
+			});			
+		});
+	}
+}
+function player_stop(){
+	if(synth){
+		synth.stopPlayer();
+		proc_log('log1','Stop...','welcome');
+		player_updateui();
+	}
+}
+function player_soundfontchange(){
+	if(synth){
+		synth.stopPlayer();
+		synth.close();
+		synth=null;
+		if(node){
+			node.disconnect();
+			node=null;
+		}
+		player_updateui();
+	}
+}
+function player_updateui(){
+	var s='';
+	if(midiname) s+='MIDI file: '+henc(midiname);
+	else s+='MIDI file: <font class=error>Not selected. Please add new one.</font>';
+	s+='<br>';
+	if(soundfontname) s+='SoundFont file: '+henc(soundfontname);
+	else s+='SoundFont file: <font class=error>Not selected. Please add new one.</font>';
+	_getid('msg1').innerHTML=s;
+	
+	var play=_getid('play');
+	var stop=_getid('stop');
+	if(midibuffer && soundfontbuffer){
+		play.disabled=false;
+		stop.disabled=false;
+		if(synth && synth.isPlayerPlaying()){
+			play.disabled=true;
+			if(looptimer){
+				clearInterval(looptimer);								
+				looptimer='';
+			}
+		}else{
+			stop.disabled=true;
+		}
+	}else{
+		play.disabled=true;
+		stop.disabled=true;
+	}	
+}
+
+var gprogressdown, playertimer, playerlen, looptimer;
+function samplesToTime(at) {
+	if(!at) at=0;
+	var in_s = Math.ceil(at / 1000);
+	var s = in_s % 60;
+	var min = in_s / 60 | 0;
+	return min + ':' + (s === 0 ? '00' : s < 10 ? '0' + s : s);
+}
+function player_timer(){
+	var progress=_getid('progress');
+	var progress2=_getid('progress2');
+	var loop=_getid('loop');
+	var play=_getid('play');
+
+	clearInterval(playertimer);
+	playertimer=setInterval(function(){
+		player_updateui();
+		if(synth && !gprogressdown){
+			synth.retrievePlayerTotalTicks().then(function(v){
+				var len=v;
+				synth.retrievePlayerCurrentTick().then(function(v){
+					var current=v;
+					if(len<=0) len=0;
+					if(current<=0) current=0;
+					progress.max=len;
+					progress.value=current;
+					progress2.innerHTML=samplesToTime(current)+' / '+samplesToTime(len);
+					playerlen=len;
+					//console.log(current+','+len);
+					if(!looptimer && loop.value==1 && len>0 && current>=len-1000){
+						//console.log('end');
+						looptimer=setInterval(function(){
+							if(synth && !synth.isPlayerPlaying() && !play.disabled){
+								clearInterval(looptimer);								
+								player_play();
+							}
+						},1000);
+					}
+				});
+			});
+		}
+	},500);
+}
+function progress_onmousedown(){
+	gprogressdown=true;
+}
+function progress_onmousemove(){
+	if(gprogressdown && playerlen){
+		var v=_getid('progress').value;
+		_getid('progress2').innerHTML=samplesToTime(v)+' / '+samplesToTime(playerlen);
+	}
+}
+function progress_onmouseup(){
+	var v=_getid('progress').value;
+	if(synth && synth.isPlayerPlaying()){
+		synth.seekPlayer(v);
+	}
+	gprogressdown=false;
+}
+function volume_onchange(){
+	if(synth){
+		var v=_getid('volume').value;
+		synth.setGain(v);
+		_getid('volume2').innerHTML=Math.floor(v*100);
+		setstorage('c_volume',v);
+	}	
+}
+function loop_onchange(){
+	var v=_getid('loop').value;
+	setstorage('c_loop',v);
+}
+</script>
+
+</td></tr><tr style="height: auto !important;"></tr></tbody></table>
+
+<table align="center" style="margin-top:10px"><tbody><tr>
+<td><span id="bottomtitle">ⓒ 2022, SoundFont MIDI Player</span>
+</td></tr></tbody></table>
+<br>
+
+<style>
+.gd_div{background-color:#FFFFE1;position:absolute;overflow:hidden;-webkit-box-shadow: 0 0 25px #999;-moz-box-shadow: 0 0 25px #999;box-shadow: 0 0 25px #999;}
+</style>
+<div id="layer_message" class="gd_div" style="z-index:10001;display:none;"></div>
+<div id="gd_window" class="gd_div" style="z-index:10000001;display:none;"></div>
+<div id="gd_btn_login" class="gd_div" style="z-index:10000000;display:none;">
+<table>
+<tbody><tr><td align="center"><button onclick="gd_login_manual()" style="font-size:20px"><img src="images/gdrive/product20.png" align="absmiddle"> Login &amp; Authorize</button> <button onclick="gd_login_close()" style="font-size:20px">Close</button>
+</td></tr><tr><td>To use this app, Please login to the Google Drive and authorize this app or website.
+<br>(Note: If your browser block or disable the third-party cookies, this login does not work correctly.)
+</td></tr></tbody></table>
+</div>
+<script>
+var CLIENT_ID = '855746330526-7di6a8kd6tmbniphsc3nhbghcld0l1b3.apps.googleusercontent.com';
+var SCOPES = [
+	'https://www.googleapis.com/auth/drive.install',
+	'https://www.googleapis.com/auth/drive.file'
+];
+var gd_developerKey='AIzaSyD7Ndfb0X0_G2GChFMDpSgJDt4KwlHDT-M';
+var gd_mimetype="";
+var gd_state='';
+
+var gd_picker,gd_loaded,gd_pickerloaded,gd_lastprogress,gd_issupported,gd_isdownloading,gd_load_timer,gd_bloburl,gd_state2;
+var gd_loginexp=0;
+var gd_callback;
+var ismsie=false;
+if(navigator.appName!="Netscape"){
+	if(navigator.userAgent.indexOf("MSIE")>=0) ismsie=true;
+}
+if(navigator.userAgent.match(/Trident\//)) ismsie=true;
+
+function gd_btn_login2(e,callback){
+	var sl=getScrollLeft();
+	var st=getScrollTop();
+	var w=getWindowWidth();
+	var h=getWindowHeight();
+
+	function go(a){
+		if(a && a.style.display==''){
+			var x=sl+((w-a.clientWidth) / 2);
+			var y=st+((h-a.clientHeight) / 2);
+			a.style["border"]="1px solid #000000";
+			a.style["padding"]="10px";
+			a.style.left=x+"px";
+			a.style.top=y+"px";
+		}
+	}
+	function go2(){
+		var a=_getid("gviewer");	
+		if(a.style.display!='')return;
+		if(!gresp)return;
+		var dy=40;
+		var dy2=15;
+		var dr=0.07;		
+		if(gresp.videoMediaMetadata && gresp.videoMediaMetadata.width && gresp.videoMediaMetadata.height){
+			var odw=gresp.videoMediaMetadata.width;var odh=gresp.videoMediaMetadata.height;
+			var dw=odw;var dh=odh;
+			var mw=w-(parseInt(w*dr)*2);
+			var mh=h-dy-dy2;
+			var dt=0;
+			if(dw>mw){
+				dw=mw; dh=dw*odh/odw; dt=12;
+			}
+			if(dh>mh){
+				dh=mh; dw=dh*odw/odh; dt=12;
+			}
+			a.style.left=(sl+((w-dw)/2))+'px';
+			a.style.width=dw+'px';
+			var y=(st+((h-dh)/2)+dt);
+			a.style.top=y+'px';				
+			a.style.height=dh+'px';			
+		}else{
+			a.style.left=(sl+parseInt(w*dr))+'px';
+			var y=st+dy;
+			a.style.top=y+'px';
+			a.style.width=(w-(parseInt(w*dr)*2))+'px';
+			a.style.height=(h-dy-dy2)+'px';			
+		}
+		var b=_getid("btn_gvclose");
+		b.style.display='';
+		var x=sl+((w-b.offsetWidth) / 2);		
+		y=y-b.offsetHeight;
+		b.style.left=x+'px';
+		b.style.top=y+'px';
+	}
+
+	go(_getid("gd_btn_login"));
+	go(_getid("gd_window"));	
+	setTimeout(function(){
+		go(_getid("gd_btn_login"));
+		go(_getid("gd_window"));	
+		if(callback)callback();
+	},10);
+	go2();
+}
+function gd_btn_login(isshow){
+	var a=_getid("gd_btn_login");
+	if(isshow){
+		a.style.display='';
+		gd_btn_login2();
+	}else{
+		a.style.display='none';
+	}
+}
+function gd_login_close(){
+	gd_btn_login(false);
+	gd_state='';
+}
+function gd_login_manual(){
+	var p={'client_id': CLIENT_ID, 'scope': SCOPES.join(' '), 'immediate': false};
+	if(gd_userId){p['login_hint']=gd_userId;p['authuser']=-1;}
+	gapi.auth.authorize(p, function (authResult){ 
+		if (authResult && !authResult.error){
+			gd_loginexp=(new Date()).getTime()+parseInt(authResult.expires_in*0.7*1000);
+			gd_btn_login(false);gd_info();
+			show_message("Login ok!!");
+			if(gd_callback) gd_callback(true);
+			else gd_open_state(true);
+		}else{
+			gd_btn_login(true);
+			show_message("Login failed!!");
+		}
+	});
+}
+function gd_login(callback,react){
+	if(gd_loginexp==0 || gd_loginexp<(new Date()).getTime()){
+	}else{
+		callback(true);
+		return;
+	}
+	var p={'client_id': CLIENT_ID, 'scope': SCOPES.join(' '), 'immediate': true};
+	if(gd_userId){p['login_hint']=gd_userId;p['authuser']=-1;}
+	gapi.auth.authorize(p, function (authResult){
+		if (authResult && !authResult.error){
+			gd_loginexp=(new Date()).getTime()+parseInt(authResult.expires_in*0.7*1000);
+			gd_btn_login(false);gd_info();
+			callback(true);
+		}else{
+			show_message("Login failed!!");
+			gd_btn_login(true);
+			callback(false);
+			if(react) gd_callback=callback;
+			else gd_callback=null;
+		}
+	});
+}
+function gd_checklogin(callback){
+	gd_login(function(result){
+		if(result)callback();
+	},true);
+}
+
+function gd_loadpicker() {		
+	gapi.load('picker',{'callback': function(){
+			gd_pickerloaded=true;
+		}
+	});	
+}
+function gd_createpicker() {
+	var access_token=gapi.auth.getToken().access_token;
+	if(!access_token){
+		alert('Error!! No access token.');
+		return;
+	}
+	if(!gd_picker){
+	  var view2 = new google.picker.DocsView(google.picker.ViewId.DOCS);
+	  if(gd_mimetype) view2.setMimeTypes(gd_mimetype);
+	  view2.setMode(google.picker.DocsViewMode.LIST);
+
+		var view4 = new google.picker.DocsView();
+		view4.setIncludeFolders(true);
+		view4.setSelectFolderEnabled(false);
+		view4.setParent("root");
+		view4.setMimeTypes(gd_mimetype);
+		view4.setMode(google.picker.DocsViewMode.LIST);
+		var view5 = new google.picker.View(google.picker.ViewId.RECENTLY_PICKED);
+
+      gd_picker = new google.picker.PickerBuilder()
+          //.enableFeature(google.picker.Feature.NAV_HIDDEN)
+          .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+		  .setLocale("en") 
+		  .setAppId(CLIENT_ID.split("-")[0])
+		  .setTitle('Select the files')// and folders
+          .setOAuthToken(access_token)
+          .addView(view2)
+		  .addView(view4)
+		  .addView(view5)
+          .addView(new google.picker.DocsUploadView())
+          .setDeveloperKey(gd_developerKey)
+          .setCallback(gd_pickercallback)
+          .build();
+	}
+	gd_picker.setVisible(true);
+}
+function gd_pickercallback(data) {
+	if (data.action == google.picker.Action.PICKED) {
+		if(data.docs && data.docs.length>0 && data.docs[0].id){
+			gd_loadfiles(data.docs);
+		}
+	}
+}
+
+function gd_checkwork(){
+	if(gd_isdownloading){
+		alert("It's working. Please try again later. or Cancel the current task.");
+		return true;
+	}
+}
+
+function gd_loadfiles(docs){
+	if(gd_checkwork())return;
+
+	function end(){
+		gd_isdownloading=false;
+		clearTimeout(messagetimer);
+		hide_message();
+		_getid("downlink").innerHTML='';
+	}	
+
+	var canceled=false;
+	_getid("downlink").innerHTML="<table><tr><td><img src='images/wait.gif' align='absmiddle'><td><a href='#' id='gd_cancel'>Cancel</a>&nbsp;<td><div id='gd_progress'>Getting file information...</div></table>";	
+	_getid('gd_cancel').onclick=function(){
+		canceled=true;
+		return false;
+	}
+	gd_isdownloading=true;
+	if(!docs){
+		end();return;
+	}
+
+	var files=[];
+	for(var i = 0; i <= docs.length-1; i++){
+		if(!docs[i].id)continue;
+		var d={};
+		d.id=docs[i].id;
+		d.name=docs[i].name;
+		d.done=false;
+		files.push(d);
+	}
+	
+	function complete(){
+		var accessToken = gapi.auth.getToken().access_token;
+		var a,d;
+		//cl_files=[];
+		for(var i = 0; i <= files.length-1; i++){
+			d=files[i];
+			if(!d.resp || !d.resp.title || d.resp.mimeType=='application/vnd.google-apps.folder')continue;
+			a={};
+			a.service='Google Drive';
+			a.filename=d.resp.title;
+			if(d.resp.downloadUrl){
+				a.link=d.resp.downloadUrl+'&access_token='+encodeURIComponent(accessToken);
+				a.link2=d.resp.downloadUrl;
+				a.link3='https://www.googleapis.com/drive/v2/files/'+d.resp.id+'?alt=media&access_token='+encodeURIComponent(accessToken);
+				a.webContentLink=d.resp.webContentLink;
+				a.size=d.resp.fileSize;
+			}			
+			a.id=d.resp.id;
+			a.resp=d.resp;
+			cl_files.push(a);
+		}
+	    cl_display();
+	}
+
+	var joblist=[];
+	var jobtimer;
+	function getentryidx(){
+		for(var i = 0; i <= files.length-1; i++){
+			if(!files[i].done){
+				files[i].done=true;
+				return i;
+			}
+		}
+		return null;
+	}
+	function checkjoblist(){
+		if(joblist.length==0)return;
+		for(var i = 0; i <= joblist.length-1; i++){
+			if(!joblist[i].complete)return;
+		}
+		clearInterval(jobtimer);
+		end();
+		complete();
+	}
+	
+	var c_scansub=false;
+	function get(jobidx){
+		function _call(){
+			var a=joblist[jobidx];
+			a.func(jobidx)
+		}
+		var idx=getentryidx();
+		if(idx==null || canceled){
+			joblist[jobidx].complete=true;
+			return;
+		}
+		if(files[idx].resp){			
+			_call();
+			return;
+		}
+
+		function _progress(s){
+			var a=_getid("gd_progress");
+			if(a) a.innerHTML='('+(idx+1)+'/'+files.length+') '+henc(s);
+		}
+		var fileId=files[idx].id;
+		_progress('Getting file info...');
+
+			var request = gapi.client.drive.files.get({
+				'fileId': fileId
+			});
+			request.execute(function(resp){				
+				if(resp.error){
+					var s='Error. ';
+					if(files[idx].name) s+=files[idx].name+'  ';
+					if(resp.error.message) s+=resp.error.message+' ';
+					if(resp.error.code==401) s+='Login or Authorize Error.';					
+					proc_log('log1', s,'error');					
+				}
+				files[idx].resp=resp;
+				if(!files[idx].name) files[idx].name=resp.title;
+
+				/*if(files[idx].resp.mimeType=='application/vnd.google-apps.folder'){
+					folderlist=[];
+					folderlist.push(files[idx]);
+					getfolder(0);
+				}else{*/
+					_call();
+				//}
+			});
+	}
+
+	if(files.length==0){
+		end();return;
+	}
+	gapi.client.load('drive', 'v2', function(){
+		jobtimer=setInterval(checkjoblist,200);
+		for(var i = 0; i < 2; i++){
+			var a={};
+			a.func=get;
+			a.complete=false;
+			joblist.push(a);
+			a.func(i);
+		}
+	});
+}
+
+function proc_log(name,s,state,s2){
+	if(name=='log1')name='log4';
+	function go(name){
+		var obj=_getid(name);
+		if(!obj){
+			return;
+		}
+		var a=document.createElement("div");
+		a.setAttribute('style','display:block;');
+		if(!state) state='';
+		var s3='<font class="'+state+'">'+henc(s)+'</font>';
+		if(s2) s3+=' '+s2;
+		a.innerHTML=s3;		
+		obj.appendChild(a);  
+		obj.scrollTop=obj.scrollHeight;
+	}
+	go(name);
+}
+
+function gd_open_picker(){
+	if(gd_checkwork())return;
+	if(!gd_issupported){
+		alert("This browser does not support.");
+		return;
+	}
+	if(!gd_loaded || !gd_pickerloaded){
+		if(!gd_load_timer) gd_loadscript(gd_open_picker);
+		else alert('Not loaded library. Please try again in a few minutes.');
+		return;
+	}
+	gd_checklogin(function(){
+		gd_createpicker();
+	});
+}
+function gd_open_state(force){
+	var s=gd_state;
+	if(s){
+		if(!gd_issupported){
+			gd_state='';
+			alert("This browser does not support.");
+			return;
+		}
+		s=decodeURIComponent(s);
+		try{
+			var a=JSON.parse(s);
+			var ids=[];
+			function find(b){
+				if(!b)return;
+				for(var i=0; i <= b.length-1; i++){
+					if(b[i]){
+						var cc={};
+						cc.id=b[i];
+						ids.push(cc);
+					}
+				}
+			}
+			find(a.ids);
+			find(a.exportIds);
+			if(ids.length>0){
+				gd_login(function(result){
+					if(gd_open2 && !force)return;
+					gd_open2=true;
+					if(!result)return;				
+					//_getid('gd_btn_reopen').style.display='';
+					gd_state='';
+					gd_loadfiles(ids,true);
+				});				
+			}
+		}catch(err){
+		}
+	}
+}
+function gd_clientload(){
+	gd_loaded=true;
+	if (window.addEventListener){
+		window.addEventListener("resize", gd_btn_login2, false);
+	}else if (window.attachEvent){
+		window.attachEvent("onresize", gd_btn_login2);
+	}
+	gd_open_state();
+}
+var gd_open2;
+function gd_open_state2(){
+	setTimeout(function(){
+		if(!gd_open2)gd_open_state();
+	}, 1000);
+}
+
+function gd_loadscript(callback){
+	function inject(s){
+		var o = document.createElement('scri' + 'pt');
+		o.setAttribute('src', s);
+		o.setAttribute('type', 'text/javascript');
+		document.body.appendChild(o);
+	}
+	if(gd_load_timer)return;
+	if(gd_loaded && gd_pickerloaded)return;
+	gd_load_timer=setInterval(function(){
+		if(gd_loaded && gd_pickerloaded){
+			clearInterval(gd_load_timer);
+			if(callback) callback();
+		}
+	},100);
+	inject('https://apis.google.com/js/client.js?onload=gd_clientload');
+	inject('https://apis.google.com/js/api.js?onload=gd_loadpicker');	
+}
+
+var gd_userId,gd_email;
+function gd_weburl(){
+	var s;
+	if(gd_email) s='https://drive.google.com/?authuser='+gd_email;
+	else s='https://drive.google.com/';
+	return s;
+}
+function gd_info(){
+	if(gd_email)return;
+	gapi.client.load('drive', 'v2', function(){
+		var request = gapi.client.drive.about.get();
+		request.execute(function(resp) {
+			if(resp && resp.user){
+				if(gd_email)return;
+				gd_email=resp.user.emailAddress;
+				if(gd_email){
+					var a=_getid('btn_open');
+					var b=_getid('gd_btn_reopen');
+					if(a)a.title=a.title+' ('+gd_email+')';
+					if(b)b.title=b.title+' ('+gd_email+')';
+				}				
+			}
+		});
+	});
+}
+function gd_dblclick(){
+	function dblclick(){
+		try{
+			if(gd_picker)gd_picker.setVisible(false);
+		}catch(err){}
+	}
+	function keydown(e){
+		if(!e)e=window.event;
+		if(e && e.keyCode==27){
+			dblclick();
+			proc_rssclose();
+		}
+	}
+	if(window.addEventListener){
+		document.addEventListener("dblclick", dblclick, false);
+		document.addEventListener("keydown", keydown, false);
+	}else if(window.attachEvent){
+		document.attachEvent("ondblclick", dblclick);
+		document.attachEvent("onkeydown", keydown);
+	}
+	document.documentElement.onmouseup=function(e){
+		if(!e) e=event;
+		if(e.button!=0 && e.button!=1)return;
+		var w=getWindowWidth()-27;
+		var h=getWindowHeight()-27;
+		if(e.clientX>w || e.clientY>h) return;
+    	var b2;
+		if(e.target) b2 = e.target;
+		else if(e.srcElement) b2 = e.srcElement;
+		if(b2.tagName=='A' || b2.tagName=='SPAN')return;
+    	while (b2) {
+			if(b2.id=="rssviewer" || b2.id=="imgrss"){
+				return;
+			}
+    		if (b2==document.body) break;
+			if (b2.parentElement) b2=b2.parentElement;
+			else b2=b2.parentNode;
+    	}
+		proc_rssclose();
+	}
+}
+function gd_init(){
+	gd_dblclick();
+	gd_state2=gd_state;
+	if(!window.XMLHttpRequest || !window.URL){
+	}else{
+		gd_issupported=true;
+		if(gd_state){
+			try{
+				var a=JSON.parse(gd_state);
+				gd_userId=a.userId;
+				if(a.ids || a.exportIds){
+					_getid("downlink").innerHTML="<table><tr><td><div id='gd_progress'>Ready...</div></table>";
+				}
+			}catch(err){}			
+			if(window.addEventListener) window.addEventListener("load", gd_open_state2, false);
+			else if (window.attachEvent) window.attachEvent("onload", gd_open_state2);
+		}
+		gd_loadscript();
+	}
+}
+init_load();
+gd_init();
+</script><script src="https://apis.google.com/js/client.js?onload=gd_clientload" type="text/javascript" gapi_processed="true"></script><script src="https://apis.google.com/js/api.js?onload=gd_loadpicker" type="text/javascript" gapi_processed="true"></script>
+
+
+<script>
+var gresp, g_lastbloburl2;
+function _getfrmdoc(ifrm){
+	return (ifrm.contentWindow) ? ifrm.contentWindow : (ifrm.contentDocument.document) ? ifrm.contentDocument.document : ifrm.contentDocument;
+}
+function proc_gview(){
+	if(!gresp)return;
+	var s;
+	var a=_getid("gviewer");	
+	var resp=gresp;
+	if(resp.f){
+		if(!window.URL){
+			alert('Not supported on this browser');
+			return;
+		}
+		if(g_lastbloburl2) window.URL.revokeObjectURL(g_lastbloburl2);
+		g_lastbloburl2=window.URL.createObjectURL(resp.f);
+		s=g_lastbloburl2;
+		if(ismsie || isedge){
+			a.style.display='';
+			var ifrm2 = _getfrmdoc(a);
+			var c;
+			try{c=ifrm2.proc_load;}catch(err){c='';}
+			if(!c){
+				a.onload=function(){
+					if(ifrm2.proc_load) ifrm2.proc_load(s,resp.filename,true);
+				}
+				ifrm2.location.replace('pdfviewer/web/');
+			}else{
+				ifrm2.proc_load(s,resp.filename,true);
+			}
+			gd_btn_login2();	
+			return;
+		}
+	}else{
+		s='https://drive.google.com/file/d/'+resp.id+'/preview';
+		if(resp && resp.embedLink) s=resp.embedLink;
+		/*if(resp.alternateLink){
+			var p1=resp.alternateLink.lastIndexOf("/");
+			if(p1>=0) s=resp.alternateLink.substr(0,p1)+'/preview';
+		}*/
+	}
+	a.style.display='';
+	var ifrm2 = _getfrmdoc(a);
+	ifrm2.location.replace(s);
+	gd_btn_login2();	
+}
+function proc_rssclose(){
+	var a=_getid("gviewer");	
+	if(a && a.style.display==''){
+		a.style.display="none";	
+		_getid("btn_gvclose").style.display="none";	
+		try{
+			var ifrm2 = _getfrmdoc(a);
+			if(ifrm2) ifrm2.location.replace('about:blank');
+		}catch(err){}
+	}
+}
+</script>
+<style>.shadow{border:0px solid silver;-webkit-box-shadow: 0 0 10px #999;	-moz-box-shadow: 0 0 10px #999; box-shadow: 0 0 10px #999;}</style>
+<button type="button" id="btn_gvclose" style="z-index:10000010;position:absolute;font-size:20px;padding:4px 25px;display:none;white-space:nowrap"><img src="//iblogbox.github.io/js/img/etc/close.png" width="14" align="absmiddle"> Close</button>
+<iframe id="gviewer" src="" style="z-index:10000011;position:absolute;display:none;background-color:white" class="shadow" frameborder="0" allowfullscreen="true"></iframe>
+<script src="https://storage.googleapis.com/app0126/js/bottom.js" async="" tos="tos.php?app=SoundFont%20MIDI%20Player" sitetitle="SoundFont MIDI Player"></script>
+<script>
+function gd_findscope(s){
+	function trim(str){return (str || '').replace(/^\s*|\s*$/g,"");}
+	var s1;
+	try{
+		if(!s) return false;
+		s=' '+s.toLowerCase()+' ';
+		for(var i = 0; i < SCOPES.length; i++){    
+			if(!SCOPES[i])continue;
+			s1=trim(SCOPES[i].split('/').pop().toLowerCase());
+			//if(s1=='drive.appfolder') s1='drive.appdata';
+			if(!/^(drive\.install|drive\.file|drive)$/.test(s1)) continue;
+			if(s.indexOf(s1+' ')<0) return false;
+		}
+	}catch(err){}
+	return true;
+}
+function init_fix_scope(){	
+	var a=window.gd_login_manual;
+	var b=window.gd_login;
+	if(!a) a=window.proc_login_manual; if(!b) b=window.proc_login;
+	if(a) a=a+''; if(b) b=b+'';
+	var ss='if (authResult && !authResult.error';
+	var ss2='if (authResult && (!authResult.error || authResult.access_token)';
+	if(a && a.indexOf(ss)>=0 && a.indexOf('gd_findscope(')<0){
+		a=a.replace(ss,'if (authResult && !authResult.error && gd_findscope(authResult.scope)');window.eval(a);
+	}else if(a && a.indexOf(ss2)>=0 && a.indexOf('gd_findscope(')<0){
+		a=a.replace(ss2,'if (authResult && (!authResult.error || authResult.access_token) && gd_findscope(authResult.scope)');window.eval(a);
+	}
+	if(b && b.indexOf(ss)>=0 && b.indexOf('gd_findscope(')<0){
+		b=b.replace(ss,'if (authResult && !authResult.error && gd_findscope(authResult.scope)');window.eval(b);
+	}else if(b && b.indexOf(ss2)>=0 && b.indexOf('gd_findscope(')<0){
+		b=b.replace(ss2,'if (authResult && (!authResult.error || authResult.access_token) && gd_findscope(authResult.scope)');window.eval(b);
+	}
+}
+init_fix_scope();
+</script>
+
+<iframe src="https://www.google.com/recaptcha/api2/aframe" width="0" height="0" style="display: none;"></iframe></body><iframe id="google_esf" name="google_esf" src="https://googleads.g.doubleclick.net/pagead/html/r20221012/r20190131/zrt_lookup.html" style="display: none;"></iframe><iframe name="goog_topics_frame" src="https://securepubads.g.doubleclick.net/static/topics/topics_frame.html" style="display: none;"></iframe></html>
